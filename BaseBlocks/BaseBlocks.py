@@ -76,6 +76,7 @@ class LabelEncodingBlock(BaseBlock):
 
 
 # WrapperBlock
+# なにか関数をそのまま使用したいときのBlock
 class WrapperBlock(BaseBlock):
     def __init__(self, function):
         self.function = function
@@ -217,5 +218,43 @@ class TargetEncodingBlock(BaseBlock):
         return output_df.add_prefix("TE_")
 
 
+# ShiftBlock
+# shiftした値を出力するBlock
+class ShiftBlock(BaseBlock):
+    def __init__(self, key: str, target_column: str, shift: int):
+        self.key = key
+        self.target_column = target_column
+        self.shift = shift
+
+    def fit(self, input_df):
+        return self.transform(input_df)
+
+    def transform(self, input_df):
+        output_df = input_df.copy()
+        output_df[self.key] = output_df[self.key].fillna("nan")
+        output_df[f'Shift{self.shift}_{self.target_column}@{self.key}'] = \
+            output_df.groupby(self.key)[self.target_column].transform(lambda x: x.shift(self.shift))
+
+        return output_df[f'Shift{self.shift}_{self.target_column}@{self.key}']
+
+
+# DiffBlock
+# diffした値を出力するBlock
+class DiffBlock(BaseBlock):
+    def __init__(self, key: str, target_column: str, diff: int):
+        self.key = key
+        self.target_column = target_column
+        self.diff = diff
+
+    def fit(self, input_df):
+        return self.transform(input_df)
+
+    def transform(self, input_df):
+        output_df = input_df.copy()
+        output_df[self.key] = output_df[self.key].fillna("nan")
+        output_df[f'Diff{self.diff}_{self.target_column}@{self.key}'] = \
+            output_df.groupby(self.key)[self.target_column].transform(lambda x:x.diff(self.diff))
+
+        return output_df[f'Diff{self.diff}_{self.target_column}@{self.key}']
 
 

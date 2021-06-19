@@ -57,6 +57,7 @@ def main():
         *[BaseBlocks.OneHotEncodingBlock(c, count_limit=10) for c in ['Sex']],
         *[BaseBlocks.CountEncodingBlock(c, whole_df=whole_df) for c in ['Sex']],
         *[BaseBlocks.LabelEncodingBlock(c, whole_df=whole_df) for c in ['Sex']],
+        *[BaseBlocks.DiffBlock(key=c, target_column="Age", diff=1) for c in ["Sex"]],
         *[BaseBlocks.StringLengthBlock(c) for c in ["Ticket"]],
         *[BaseBlocks.ArithmeticOperationBlock("Fare", "Age", "/")],
         *[BaseBlocks.AggregationBlock(whole_df=whole_df, key=c, agg_column="Age",
@@ -66,7 +67,7 @@ def main():
     train_x = to_feature(train, process_blocks, is_train=True)
     test_x = to_feature(test, process_blocks)
     print(train_x.T)
-    print(train_x.isnull().sum())
+    print(train_x.info())
     print(test_x.shape)
 
 
