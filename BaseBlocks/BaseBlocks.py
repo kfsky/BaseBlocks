@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 
 
 # BaseBlock
@@ -9,6 +10,16 @@ class BaseBlock(object):
 
     def transform(self, input_df):
         raise NotImplementedError()
+
+
+# ContinuousBlock
+# 連続変数をそのまま使用したいときに使用するBlock
+class ContinuousBlock(BaseBlock):
+    def __init__(self, column):
+        self.column = column
+
+    def transform(self, input_df):
+        return input_df[self.column].copy()
 
 
 # CountEncoding
@@ -44,6 +55,24 @@ class OneHotEncodingBlock(BaseBlock):
         output_df = pd.get_dummies(x, dummy_na=False)
         output_df.columns = output_df.columns.tolist()
         return output_df.add_prefix(f'OHE_{self.column}=')
+
+
+# LabelEncodingBlock
+class LabelEncodingBlock(BaseBlock):
+    def __init__(self, column: str, whole_df: pd.DataFrame):
+        self.column = column
+        self.le = LabelEncoder()
+        self.whole_df = whole_df
+
+    def fit(self, input_df, y=None):
+        self.le.fit(self.whole_df[self.column].fillna("nan"))
+        return self.transform(input_df)
+
+    def transform(self, input_df):
+        c = self.column
+        output_df = pd.DataFrame()
+        output_df[c] = self.le.transform(input_df[self.column].fillna("nan")).astype("int")
+        return output_df.add_prefix(f'LE_')
 
 
 # WrapperBlock
@@ -85,6 +114,7 @@ class ArithmeticOperationBlock(BaseBlock):
 
 
 # AggregationBlocks
+# 集計用のBlock
 class AggregationBlock(BaseBlock):
     def __init__(self, whole_df: pd.DataFrame, key: str, agg_column: str, agg_funcs: ["mean"], fill_na=None):
         self.whole_df = whole_df
@@ -109,6 +139,7 @@ class AggregationBlock(BaseBlock):
 
 
 # BinCountBlock
+# 連続変数をbin化するBlock
 class BinCountBlock(BaseBlock):
     def __init__(self, column: str, bins: int = 10):
         self.bins = bins
@@ -122,6 +153,69 @@ class BinCountBlock(BaseBlock):
         output_df_columns_name = f'{self.column}_Bins={self.bins}'
         output_df[output_df_columns_name] = pd.qcut(input_df[self.column], self.bins, labels=False)
         return output_df
+
+
+# StringLengthBlock
+# 文字列の長さを集計するBlock
+class StringLengthBlock(BaseBlock):
+    def __init__(self, column):
+        self.column = column
+
+    def transform(self, input_df):
+        output_df = pd.DataFrame()
+        output_df[self.column] = input_df[self.column].str.len()
+        return output_df.add_prefix('StringLength_')
+
+
+# TargetEncodingBlock
+# cvはlistの状態
+class TargetEncodingBlock(BaseBlock):
+    def __init__(self, use_columns, cv):
+        super(TargetEncodingBlock, self).__init__()
+
+        self.mapping_df_ = None
+        self.use_columns = use_columns
+        self.cv = list(cv)
+        self.n_fold = len(cv)
+
+    def create_mapping(self, input_df, y):
+        self.mapping_df_ = {}
+        self.y_mean_ = np.mean(y)
+
+        output_df = pd.DataFrame()
+        target = pd.Series(y)
+
+        for col_name in self.use_columns:
+            keys = input_df[col_name].unique()
+            X = input_df[col_name]
+
+            oof = np.zeros_like(X, dtype=np.float)
+
+            for idx_train, idx_valid in self.cv:
+                _df = target[idx_train].groupby(X[idx_train]).mean()
+                _df = _df.reindex(keys)
+                _df = _df.fillna(_df.mean())
+                oof[idx_valid] = input_df[col_name][idx_valid].map(_df.to_dict())
+
+            output_df[col_name] = oof
+
+            self.mapping_df_[col_name] = target.groupby(X).mean()
+
+        return output_df
+
+    def fit(self, input_df:pd.DataFrame,
+            y = None, **kwargs)->pd.DataFrame:
+        output_df = self.create_mapping(input_df, y=y)
+        return output_df.add_prefix("TE_")
+
+    def transform(self, input_df):
+        output_df = pd.DataFrame()
+
+        for c in self.use_columns:
+            output_df[c] = input_df[c].map(self.mapping_df_[c]).fillna(self.y_mean_)
+
+        return output_df.add_prefix("TE_")
+
 
 
 

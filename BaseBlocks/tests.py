@@ -24,14 +24,6 @@ def timer(logger=None, format_str='{:.3f}[s]', prefix=None, suffix=None):
         print(out_str)
 
 
-def create_continuous_features(input_df):
-    use_columns = [
-        # 連続変数
-        'Age',
-    ]
-    return input_df[use_columns].copy()
-
-
 def get_function(block, is_train):
     s = mapping = {
         True: 'fit',
@@ -60,12 +52,15 @@ def to_feature(input_df,
 def main():
 
     process_blocks = [
-        BaseBlocks.WrapperBlock(create_continuous_features),
+        *[BaseBlocks.ContinuousBlock(c) for c in ["Age"]],
         BaseBlocks.BinCountBlock("Age", bins=8),
-        *[BaseBlocks.OneHotEncodingBlock(c, count_limit=10) for c in ['Sex', 'Embarked']],
-        *[BaseBlocks.CountEncodingBlock(c, whole_df=whole_df) for c in ['Sex', 'Embarked']],
+        *[BaseBlocks.OneHotEncodingBlock(c, count_limit=10) for c in ['Sex']],
+        *[BaseBlocks.CountEncodingBlock(c, whole_df=whole_df) for c in ['Sex']],
+        *[BaseBlocks.LabelEncodingBlock(c, whole_df=whole_df) for c in ['Sex']],
+        *[BaseBlocks.StringLengthBlock(c) for c in ["Ticket"]],
         *[BaseBlocks.ArithmeticOperationBlock("Fare", "Age", "/")],
-        *[BaseBlocks.AggregationBlock(whole_df=whole_df, key=c, agg_column="Age", agg_funcs=["mean","median"], fill_na=0) for c in ["Sex", "Embarked"]]
+        *[BaseBlocks.AggregationBlock(whole_df=whole_df, key=c, agg_column="Age",
+                                      agg_funcs=["mean"], fill_na=0) for c in ["Sex"]]
     ]
 
     train_x = to_feature(train, process_blocks, is_train=True)
