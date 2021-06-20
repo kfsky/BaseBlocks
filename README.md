@@ -1,20 +1,19 @@
 # BaseBlocks
-コンペの特徴量作成を行っていく際に、各処理をBlock化。
-特徴量生成の際に、作成した特徴量の処理がわかりやすくなる・他特徴量への影響をなくす。
-などの目的で作っています。
+コンペの特徴量作成を行っていく際に、各処理をBlock化。  
+特徴量生成の際に、作成した特徴量の処理がわかりやすくなる・他特徴量への影響をなくすなどの目的で作っています。  
 
 ## フォルダ構成
 BaseBlocks.pyにBlocksを記載しています。
 
-.
-├── BaseBlocks
-│   ├── BaseBlocks.py
-│   └── test.py（動作確認用ファイル）
-└── test_data
-    ├── titanic_train.csv
-    └── titanic_test.csv
-
-テストにはtitanicデータを使用しています。
+.  
+├── BaseBlocks  
+│   ├── BaseBlocks.py  
+│   └── test.py（動作確認用ファイル）  
+└── test_data  
+    ├── titanic_train.csv  
+    └── titanic_test.csv  
+  
+テストにはtitanicデータを使用しています。  
 https://www.kaggle.com/c/titanic/data
 
 ## Blocks
@@ -75,7 +74,7 @@ def to_feature(input_df,
     return out_df
 ```
 
-process_blocksの例（必要なBlockをリストに格納）
+process_blocksの例（必要なBlockをリストに格納）  
 複数カラムでの実行も可能
 ```python
 process_blocks = [
