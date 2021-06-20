@@ -49,7 +49,7 @@ setup(
     url='https://kfsky-ds-blog.com/',
     author_email='https://twitter.com/kfsky_tane',
     install_requires=_lines_from_file('requirements.txt'),
-    extras_require=get_extra_requires(),
+    #extras_require=get_extra_requires(),
     classifiers=[
         # ライセンス情報とか
         # 'Framework :: Matplotlib',
