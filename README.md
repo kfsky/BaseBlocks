@@ -1,8 +1,21 @@
 # BaseBlocks
-BaseBlockを書いて特徴量を作成していく
+コンペの特徴量作成を行っていく際に、各処理をBlock化。
+特徴量生成の際に、作成した特徴量の処理がわかりやすくなる・他特徴量への影響をなくす。
+などの目的で作っています。
 
 ## フォルダ構成
 BaseBlocks.pyにBlocksを記載しています。
+
+.
+├── BaseBlocks
+│   ├── BaseBlocks.py
+│   └── test.py（動作確認用ファイル）
+└── test_data
+    ├── titanic_train.csv
+    └── titanic_test.csv
+
+テストにはtitanicデータを使用しています。
+https://www.kaggle.com/c/titanic/data
 
 ## Blocks
 以下のBlocksを実装
@@ -62,6 +75,24 @@ def to_feature(input_df,
     return out_df
 ```
 
+process_blocksの例（必要なBlockをリストに格納）
+複数カラムでの実行も可能
+```python
+process_blocks = [
+        *[BaseBlocks.ContinuousBlock(c) for c in ["Age"]],
+        BaseBlocks.BinCountBlock("Age", bins=8),
+        *[BaseBlocks.OneHotEncodingBlock(c, count_limit=10) for c in ['Sex']],
+        *[BaseBlocks.CountEncodingBlock(c, whole_df=whole_df) for c in ['Sex']],
+        *[BaseBlocks.LabelEncodingBlock(c, whole_df=whole_df) for c in ['Sex']],
+        *[BaseBlocks.DiffBlock(key=c, target_column="Age", diff=1) for c in ["Sex"]],
+        *[BaseBlocks.StringLengthBlock(c) for c in ["Ticket"]],
+        *[BaseBlocks.ArithmeticOperationBlock("Fare", "Age", "/")],
+        *[BaseBlocks.AggregationBlock(whole_df=whole_df, key=c, agg_column="Age",
+                                      agg_funcs=["mean"], fill_na=0) for c in ["Sex"]]
+    ]
+```
+
 ## To Do
 * PCAなどのBlock作成
 * str同士の組み合わせを行い、LE, OHEなどを行えるBlock
+* パッケージ化
