@@ -106,5 +106,19 @@ train_x = to_feature(train, process_blocks, is_train=True)
 test_x = to_feature(test, process_blocks)
 ```
 
+## install
+以下でinstallして使用可能。（テストできてないところがあるので、
+Global以外で行う方がいいです。
+```
+python -m venv .venv
+source .venv/bin/activate
+```
+
+install完了後は以下のようにimportして実装
+```python
+from BaseBlocks import BaseBlocks
+```
+
 ## To Do
-* パッケージ化
+* test環境？など
+* modelなどの関数実装→これは他のリポジトリでやっていくかも
