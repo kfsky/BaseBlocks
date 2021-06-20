@@ -366,6 +366,76 @@ class TfidfBlock(BaseBlock):
         return output_df.add_prefix(f'{self.column}_tfidf_')
 
 
+# Str2Str2OneHotEncoding
+# 2つの特徴量を組み合わせて、それをOneHotEncodeする
+class Str2Str2OneHotEncodingBlock(BaseBlock):
+    def __init__(self, column: str, base_column: str, count_limit: int):
+        self.column = column
+        self.base_column = base_column
+        self.cats_ = None
+        self.count_limit = count_limit
+
+    def fit(self, input_df, y=None):
+        _df = input_df.copy()
+        _df[self.base_column + "_" + self.column] = _df[self.base_column] + "_" + _df[self.column]
+        vc = _df[self.base_column + "_" + self.column].dropna().value_counts()
+        cats = vc[vc > self.count_limit].index
+        self.cats_ = cats
+        return self.transform(input_df)
+
+    def transform(self, input_df):
+        _df = input_df.copy()
+        _df[self.base_column + "_" + self.column] = _df[self.base_column] + "_" + _df[self.column]
+        x = pd.Categorical(_df[self.base_column + "_" + self.column], categories=self.cats_)
+        output_df = pd.get_dummies(x, dummy_na=False)
+        output_df.columns = output_df.columns.tolist()
+        return output_df.add_prefix(f'OHE_{self.base_column}@{self.column}=')
 
 
+# Str2Str2LabelEncoding
+# 2つの特徴量を組み合わせて、それをLabelEncodeする
+class Str2Str2LabelEncodingBlock(BaseBlock):
+    def __init__(self, column: str, base_column: str, whole_df: pd.DataFrame):
+        self.column = column
+        self.base_column = base_column
+        self.le = LabelEncoder()
+        self.whole_df = whole_df
+
+    def fit(self, input_df, y=None):
+        _df = self.whole_df.copy()
+        _df[self.base_column + "_" + self.column] = _df[self.base_column] + "_" + _df[self.column]
+        self.le.fit(_df[self.base_column + "_" + self.column].fillna("nan"))
+        return self.transform(input_df)
+
+    def transform(self, input_df):
+        c = self.base_column + "_" + self.column
+        _df = input_df.copy()
+        _df[self.base_column + "_" + self.column] = _df[self.base_column] + "_" + _df[self.column]
+        output_df = pd.DataFrame()
+        output_df[c] = self.le.transform(_df[self.base_column + "_" + self.column].fillna("nan")).astype("int")
+        return output_df.add_prefix(f'LE_')
+
+
+# Str2Str2LabelEncoding
+# 2つの特徴量を組み合わせて、それをLabelEncodeする
+class Str2Str2CountEncodingBlock(BaseBlock):
+    def __init__(self, column: str, base_column: str, whole_df: pd.DataFrame):
+        self.column = column
+        self.base_column = base_column
+        self.whole_df = whole_df
+
+    def transform(self, input_df):
+        _df = self.whole_df.copy()
+        _df[self.base_column + "_" + self.column] = _df[self.base_column] + "_" + _df[self.column]
+
+        c = self.base_column + "_" + self.column
+        vc = _df[c].value_counts()
+
+        _input_df = input_df.copy()
+        _input_df[self.base_column + "_" + self.column] = _input_df[self.base_column] + "_" + _input_df[self.column]
+
+        output_df = pd.DataFrame()
+        output_df[c] = _input_df[c].map(vc)
+
+        return output_df.add_prefix("CE_")
 

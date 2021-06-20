@@ -8,7 +8,7 @@ BaseBlocks.pyにBlocksを記載しています。
 .  
 ├── BaseBlocks  
 │   ├── BaseBlocks.py  
-│   └── test.py（動作確認用ファイル）  
+│   └── tests.py（動作確認用ファイル）  
 └── test_data  
     ├── titanic_train.csv  
     └── titanic_test.csv  
@@ -33,6 +33,9 @@ https://www.kaggle.com/c/titanic/data
 * DiffBlock
 * PivotingBlock
 * TfidfBlock
+* Str2Str2OneHotEncodingBlock
+* Str2Str2LabelEncodingBlock
+* Str2Str2CountEncodingBlock
 
 ## 実装方法
 
@@ -93,6 +96,15 @@ process_blocks = [
     ]
 ```
 
+train_data, test_dataそれぞれで特徴量生成。（Blockによってはwhole_dfが必要）
+```python
+train = pd.read_csv("../test_data/titanic_train.csv")
+test = pd.read_csv("../test_data/titanic_test.csv")
+whole_df = pd.concat([train, test], ignore_index=True)
+
+train_x = to_feature(train, process_blocks, is_train=True)
+test_x = to_feature(test, process_blocks)
+```
+
 ## To Do
-* str同士の組み合わせを行い、LE, OHEなどを行えるBlock
 * パッケージ化
