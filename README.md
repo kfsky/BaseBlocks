@@ -32,6 +32,7 @@ https://www.kaggle.com/c/titanic/data
 * ShiftBlock
 * DiffBlock
 * PivotingBlock
+* TfidfBlock
 
 ## 実装方法
 
@@ -93,6 +94,5 @@ process_blocks = [
 ```
 
 ## To Do
-* PCAなどのBlock作成
 * str同士の組み合わせを行い、LE, OHEなどを行えるBlock
 * パッケージ化

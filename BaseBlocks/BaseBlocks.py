@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.decomposition import PCA
+import nltk
+import texthero as hero
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.pipeline import Pipeline
 
 
 # BaseBlock
@@ -301,6 +306,64 @@ class PivotingBlock(BaseBlock):
     def transform(self, input_df):
         output_df = pd.merge(input_df[[self.idx]], self.df, on=self.idx, how="left").drop(self.idx, axis=1)
         return output_df
+
+
+# text前処理
+def text_normalization(text):
+    # 英語、オランダ語をstopwordとして指定
+    custom_stopwords = nltk.corpus.stopwords.words("dutch") + nltk.corpus.stopwords.words("english")
+
+    x = hero.clean(text, pipeline=[
+        hero.preprocessing.fillna,
+        hero.preprocessing.lowercase,
+        hero.preprocessing.remove_digits,
+        hero.preprocessing.remove_punctuation,
+        hero.preprocessing.remove_diacritics,
+        lambda x: hero.preprocessing.remove_stopwords(x, stopwords=custom_stopwords)
+    ])
+
+    return x
+
+
+# TfidfBlock
+# 自然言語系のカラムに対しての処理
+class TfidfBlock(BaseBlock):
+    """tfidf x SVD による圧縮を行なう block"""
+
+    def __init__(self, column: str):
+        """
+        args:
+            column: str
+                変換対象のカラム名
+        """
+        self.column = column
+
+    def preprocess(self, input_df):
+        x = text_normalization(input_df[self.column])
+        return x
+
+    def get_master(self, input_df):
+        """tdidfを計算するための全体集合を返す.
+        デフォルトでは fit でわたされた dataframe を使うが, もっと別のデータを使うのも考えられる."""
+        return input_df
+
+    def fit(self, input_df, y=None):
+        master_df = self.get_master(input_df)
+        text = self.preprocess(input_df)
+        self.pileline_ = Pipeline([
+            ('tfidf', TfidfVectorizer(max_features=10000)),
+            ('svd', TruncatedSVD(n_components=50, random_state=1234)),
+        ])
+
+        self.pileline_.fit(text)
+        return self.transform(input_df)
+
+    def transform(self, input_df):
+        text = self.preprocess(input_df)
+        z = self.pileline_.transform(text)
+
+        output_df = pd.DataFrame(z)
+        return output_df.add_prefix(f'{self.column}_tfidf_')
 
 
 
