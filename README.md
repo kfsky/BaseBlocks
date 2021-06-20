@@ -31,6 +31,7 @@ https://www.kaggle.com/c/titanic/data
 * TargetEncodingBlock
 * ShiftBlock
 * DiffBlock
+* PivotingBlock
 
 ## 実装方法
 

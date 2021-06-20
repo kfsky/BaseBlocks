@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
+from sklearn.decomposition import PCA
 
 
 # BaseBlock
@@ -256,5 +257,52 @@ class DiffBlock(BaseBlock):
             output_df.groupby(self.key)[self.target_column].transform(lambda x:x.diff(self.diff))
 
         return output_df[f'Diff{self.diff}_{self.target_column}@{self.key}']
+
+
+# PivotingBlock
+# PCAなど、pivottable作成していく際のBlock
+# titanicデータではやりにくいので、別データで確認が必要
+class PivotingBlock(BaseBlock):
+    def __init__(self, idx, col, val, decomposer=PCA(n_components=4), name=""):
+        """
+        :param idx: index of pivot table
+        :param col: columns of pivot table
+        :param val: aggregated feature
+        :return: DataFrame(columns=col, index=idx)
+        """
+        self.idx = idx
+        self.col = col
+        self.val = val
+        self.decomposer = decomposer
+        self.name = name
+        self.df = None
+
+    def fit(self, input_df, y=None):
+        _df = input_df.astype(str).pivot_table(
+            index=self.idx,
+            columns=self.col,
+            values=self.val,
+            aggfunc='count',
+        ).reset_index()
+
+        idx = _df[self.idx]
+        _df.drop(self.idx, axis=1, inplace=True)
+        _df = _df.div(_df.sum(axis=1), axis=0).fillna(0)
+
+        if self.decomposer is not None:
+            self.df = pd.DataFrame(self.decomposer.fit_transform(_df))
+            self.df.columns = [f"{i:03}" for i in range(self.df.shape[1])]
+        else:
+            self.df = _df.copy()
+
+        self.df.columns = [f"pivot_{self.idx}_{self.col}{self.name}:{s}" for s in self.df.columns]
+        self.df[self.idx] = idx
+
+    def transform(self, input_df):
+        output_df = pd.merge(input_df[[self.idx]], self.df, on=self.idx, how="left").drop(self.idx, axis=1)
+        return output_df
+
+
+
 
 
